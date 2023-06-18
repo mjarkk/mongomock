@@ -44,6 +44,7 @@ func main() {
         log.Fatal(err)
     }
     fmt.Printf("Found user: %+v\n", user)
+    // After exit the database data is gone
 }
 ```
 
