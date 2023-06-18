@@ -89,7 +89,9 @@ type Cursor struct {
 	document documentT
 }
 
-// Next returns the next item in the cursor
+// Next looks for the next item within the cursor
+// returns true if there is a next item
+// returns false if there is no next item
 func (c *Cursor) Next() bool {
 	c.collection.m.Lock()
 	defer c.collection.m.Unlock()
@@ -106,7 +108,7 @@ func (c *Cursor) Next() bool {
 	return false
 }
 
-// Decode implements db.Cursor
+// Decode decodes the current item within the cursor into e
 func (c *Cursor) Decode(e any) error {
 	eReflection := reflect.ValueOf(e)
 	if eReflection.Kind() != reflect.Pointer {
@@ -117,7 +119,7 @@ func (c *Cursor) Decode(e any) error {
 }
 
 // FindCursor finds documents in the collection of the base
-func (c *Collection) FindCursor(collectionName string, filter bson.M) (*Cursor, error) {
+func (c *Collection) FindCursor(filter bson.M) (*Cursor, error) {
 
 	c.m.Lock()
 	cursor := &Cursor{

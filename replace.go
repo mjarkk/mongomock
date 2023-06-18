@@ -12,7 +12,7 @@ func (c *Collection) ReplaceOneById(id primitive.ObjectID, value any) error {
 	c.m.Lock()
 	defer c.m.Unlock()
 
-	replacementDocument, err := TryNewDocument(value)
+	replacementDocument, err := tryNewDocument(value)
 	if err != nil {
 		return err
 	}

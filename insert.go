@@ -17,7 +17,7 @@ func (c *Collection) UnsafeInsert(documents ...any) error {
 
 	additiveDocuments := make([]documentT, len(documents))
 	for idx, document := range documents {
-		doc, err := TryNewDocument(document)
+		doc, err := tryNewDocument(document)
 		if err != nil {
 			return err
 		}

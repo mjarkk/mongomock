@@ -14,7 +14,7 @@ type documentT struct {
 	bytes []byte
 }
 
-func TryNewDocument(value any) (documentT, error) {
+func tryNewDocument(value any) (documentT, error) {
 	parsedValue, isNil := match.MightUnwrapPointersAndInterfaces(reflect.ValueOf(value))
 	if isNil {
 		return documentT{}, errors.New("value is nil")
