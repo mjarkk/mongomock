@@ -10,7 +10,7 @@ import (
 
 // Match matches a document against a filter
 // returns true if it matches
-func Match(document any, filter bson.M) bool {
+func Match(document bson.M, filter bson.M) bool {
 	if filter == nil {
 		return true
 	}
@@ -82,7 +82,7 @@ func valueMatchesFilter(value any, filter any) bool {
 			return false
 		}
 
-		filterReflection, isNil := mightUnwrapPointersAndInterfaces(reflect.ValueOf(filter))
+		filterReflection, isNil := MightUnwrapPointersAndInterfaces(reflect.ValueOf(filter))
 		switch filterReflection.Kind() {
 		case reflect.Struct, reflect.Map:
 			filter = mustConvertToBson(filter)

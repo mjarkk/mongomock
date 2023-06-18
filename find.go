@@ -4,6 +4,7 @@ import (
 	"errors"
 	"reflect"
 
+	"github.com/mjarkk/mongomock/match"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -37,9 +38,7 @@ func (c *Collection) FindOne(placeInto any, filters bson.M) error {
 // The results can be filtered using filters
 // The filters should work equal to MongoDB filters (https://docs.mongodb.com/manual/tutorial/query-documents/)
 // tough this might miss features compared to mongoDB's filters
-func (c *Collection) Find(results any, filters bson.M) error {
-	itemsFilter := newFilter(filters)
-
+func (c *Collection) Find(results any, filter bson.M) error {
 	c.m.Lock()
 	defer c.m.Unlock()
 
@@ -55,17 +54,25 @@ func (c *Collection) Find(results any, filters bson.M) error {
 
 	resultsSliceContentType := resultRefl.Type().Elem()
 	resultIsSliceOfPtrs := resultsSliceContentType.Kind() == reflect.Ptr
+	if resultIsSliceOfPtrs {
+		resultsSliceContentType = resultsSliceContentType.Elem()
+	}
 
-	for _, item := range c.documents {
-		if !itemsFilter.matches(item) {
+	for _, document := range c.documents {
+		if !match.Match(document.bson, filter) {
 			continue
 		}
 
-		itemRefl := reflect.ValueOf(item)
+		newDocument := reflect.New(resultsSliceContentType)
+		err := bson.Unmarshal(document.bytes, newDocument.Interface())
+		if err != nil {
+			return err
+		}
+
 		if resultIsSliceOfPtrs {
-			resultRefl = reflect.Append(resultRefl, itemRefl)
+			resultRefl = reflect.Append(resultRefl, newDocument)
 		} else {
-			resultRefl = reflect.Append(resultRefl, itemRefl.Elem())
+			resultRefl = reflect.Append(resultRefl, newDocument.Elem())
 		}
 	}
 

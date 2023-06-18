@@ -6,7 +6,16 @@ import (
 
 	. "github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
+
+func mustObjectIDFromHex(hex string) primitive.ObjectID {
+	id, err := primitive.ObjectIDFromHex(hex)
+	if err != nil {
+		panic(err.Error())
+	}
+	return id
+}
 
 func TestMatch(t *testing.T) {
 	cases := []struct {
@@ -50,6 +59,12 @@ func TestMatch(t *testing.T) {
 			bson.M{"foo": []string{"bar", "baz"}},
 			bson.M{"foo": []string{"bar", "baz"}},
 			bson.M{"foo": []string{"bar", "foo"}},
+		},
+		{
+			"object ids",
+			bson.M{"_id": mustObjectIDFromHex("5a0e7f6c0f291d0f1f2d3e4f")},
+			bson.M{"_id": mustObjectIDFromHex("5a0e7f6c0f291d0f1f2d3e4f")},
+			bson.M{"_id": mustObjectIDFromHex("000000000000000000000000")},
 		},
 		{
 			"$eq",

@@ -9,11 +9,12 @@ import (
 // A slice-like value is either a slice or an array or a pointer to a slice or an array.
 // Nil slice-like values are returned as empty slices.
 func sliceLikeToSlice(sliceLike any) (slice []any, isSliceLike bool) {
-	sliceReflection, isNil := mightUnwrapPointersAndInterfaces(reflect.ValueOf(sliceLike))
-	if sliceReflection.Kind() != reflect.Slice && sliceReflection.Kind() != reflect.Array {
+	sliceReflection, isNil := MightUnwrapPointersAndInterfaces(reflect.ValueOf(sliceLike))
+	kind := sliceReflection.Kind()
+	if kind != reflect.Slice && kind != reflect.Array {
 		return nil, false
 	}
-	if isNil || sliceReflection.IsNil() {
+	if isNil || (kind == reflect.Slice && sliceReflection.IsNil()) {
 		return []any{}, true
 	}
 
@@ -25,8 +26,8 @@ func sliceLikeToSlice(sliceLike any) (slice []any, isSliceLike bool) {
 	return slice, true
 }
 
-// mightUnwrapPointersAndInterfaces tries to unwrap pointers from a value.
-func mightUnwrapPointersAndInterfaces(v reflect.Value) (unwrappedValue reflect.Value, isNil bool) {
+// MightUnwrapPointersAndInterfaces tries to unwrap pointers from a value.
+func MightUnwrapPointersAndInterfaces(v reflect.Value) (unwrappedValue reflect.Value, isNil bool) {
 outer:
 	for {
 		switch v.Kind() {
@@ -50,7 +51,7 @@ outer:
 func lookupMapKey(scope reflect.Value, key string) *reflect.Value {
 	nestedFilterkeyParts := strings.Split(key, ".")
 	for _, part := range nestedFilterkeyParts {
-		unwrappedScope, isNil := mightUnwrapPointersAndInterfaces(scope)
+		unwrappedScope, isNil := MightUnwrapPointersAndInterfaces(scope)
 		if isNil {
 			return nil
 		}
@@ -75,6 +76,6 @@ func lookupMapKey(scope reflect.Value, key string) *reflect.Value {
 			return nil
 		}
 	}
-	scope, _ = mightUnwrapPointersAndInterfaces(scope)
+	scope, _ = MightUnwrapPointersAndInterfaces(scope)
 	return &scope
 }

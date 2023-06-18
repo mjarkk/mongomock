@@ -17,7 +17,7 @@ func (c *Collection) Count(filter bson.M) (uint64, error) {
 
 	var count uint64
 	for _, document := range c.documents {
-		if match.Match(document, filter) {
+		if match.Match(document.bson, filter) {
 			count++
 		}
 	}

@@ -1,6 +1,12 @@
 package mongomock
 
-import "go.mongodb.org/mongo-driver/bson"
+import (
+	"errors"
+	"reflect"
+
+	"github.com/mjarkk/mongomock/match"
+	"go.mongodb.org/mongo-driver/bson"
+)
 
 // documentT describes a document within the collection
 type documentT struct {
@@ -9,7 +15,12 @@ type documentT struct {
 }
 
 func TryNewDocument(value any) (documentT, error) {
-	encodedValue, err := bson.Marshal(value)
+	parsedValue, isNil := match.MightUnwrapPointersAndInterfaces(reflect.ValueOf(value))
+	if isNil {
+		return documentT{}, errors.New("value is nil")
+	}
+
+	encodedValue, err := bson.Marshal(parsedValue.Interface())
 	if err != nil {
 		return documentT{}, err
 	}

@@ -15,7 +15,7 @@ func (c *Collection) DeleteByID(ids ...primitive.ObjectID) error {
 	query := bson.M{"_id": bson.M{"$in": ids}}
 	for idx := len(c.documents) - 1; idx >= 0; idx-- {
 		document := c.documents[idx]
-		if match.Match(document, query) {
+		if match.Match(document.bson, query) {
 			c.documents = append(c.documents[:idx], c.documents[idx+1:]...)
 			return nil
 		}

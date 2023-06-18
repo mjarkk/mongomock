@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	. "github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func TestDelete(t *testing.T) {
@@ -24,7 +25,7 @@ func TestDelete(t *testing.T) {
 
 	// Should result in no panics/errors if there is nothing to delete
 	err = usersCollection.DeleteByID(mockData.ID)
-	NoError(t, err)
+	Equal(t, mongo.ErrNoDocuments, err)
 	documentsCount, _ = usersCollection.Count(nil)
 	Equal(t, uint64(0), documentsCount)
 }
