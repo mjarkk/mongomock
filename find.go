@@ -13,20 +13,18 @@ import (
 // The result can be filtered using filters
 // The filters should work equal to MongoDB filters (https://docs.mongodb.com/manual/tutorial/query-documents/)
 // tough this might miss features compared to mongoDB's filters
-func (c *Collection) FindOne(placeInto any, filters bson.M) error {
+func (c *Collection) FindOne(placeInto any, filter bson.M) error {
 	placeIntoReflection := reflect.ValueOf(placeInto)
 	if placeIntoReflection.Kind() != reflect.Ptr {
 		return errors.New("placeInto should be a pointer")
 	}
 
-	itemsFilter := newFilter(filters)
-
 	c.m.Lock()
 	defer c.m.Unlock()
 
-	for _, item := range c.documents {
-		if itemsFilter.matches(item) {
-			err := bson.Unmarshal(item.bytes, placeInto)
+	for _, document := range c.documents {
+		if match.Match(document.bson, filter) {
+			err := bson.Unmarshal(document.bytes, placeInto)
 			return err
 		}
 	}
@@ -86,7 +84,7 @@ type Cursor struct {
 	// should be set initially
 	collection *Collection
 	idx        int
-	filter     *filter
+	filter     bson.M
 	// set after init
 	document documentT
 }
@@ -99,7 +97,7 @@ func (c *Cursor) Next() bool {
 	for c.idx < len(c.collection.documents) {
 		c.document = c.collection.documents[c.idx]
 		c.idx++
-		if !c.filter.matches(c.document) {
+		if !match.Match(c.document.bson, c.filter) {
 			continue
 		}
 		return true
@@ -119,14 +117,13 @@ func (c *Cursor) Decode(e any) error {
 }
 
 // FindCursor finds documents in the collection of the base
-func (c *Collection) FindCursor(collectionName string, filters bson.M) (*Cursor, error) {
-	itemsFilter := newFilter(filters)
+func (c *Collection) FindCursor(collectionName string, filter bson.M) (*Cursor, error) {
 
 	c.m.Lock()
 	cursor := &Cursor{
 		collection: c,
 		idx:        0,
-		filter:     itemsFilter,
+		filter:     filter,
 	}
 	c.m.Unlock()
 
