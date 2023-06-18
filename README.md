@@ -4,6 +4,11 @@ mongomock is a simple to use library that mocks features of a mongodb server but
 
 This package is very handy to use in a testing envourment
 
+## Docs
+
+- Below is a list of all the supported methods
+- [mongomock on pkg.go.dev](https://pkg.go.dev/github.com/mjarkk/mongomock)
+
 ## Quick start
 
 ```sh
