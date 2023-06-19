@@ -7,8 +7,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// UpdateByID updates a document in the database by its ID
-func (c *Collection) ReplaceOneById(id primitive.ObjectID, value any) error {
+// ReplaceFirst updates the first document in the database that matches the filter
+func (c *Collection) ReplaceFirst(filter bson.M, value any) error {
 	c.m.Lock()
 	defer c.m.Unlock()
 
@@ -17,14 +17,18 @@ func (c *Collection) ReplaceOneById(id primitive.ObjectID, value any) error {
 		return err
 	}
 
-	query := bson.M{"_id": id}
-
 	for i, entry := range c.documents {
-		if match.Match(entry.bson, query) {
+		if match.Match(entry.bson, filter) {
 			c.documents[i] = replacementDocument
 			return nil
 		}
 	}
 
 	return mongo.ErrNoDocuments
+}
+
+// ReplaceFirstByID updates a document in the database by its ID
+// The query used here is {"_id": id}
+func (c *Collection) ReplaceFirstByID(id primitive.ObjectID, value any) error {
+	return c.ReplaceFirst(bson.M{"_id": id}, value)
 }

@@ -107,7 +107,7 @@ err := db.Collection("users").Dump(panicResults)
 
 ```go
 user := User{}
-err := db.Collection("users").FindOne(&user, bson.M{"email": "example@example.org"})
+err := db.Collection("users").FindFirst(&user, bson.M{"email": "example@example.org"})
 ```
 
 ### `Find` - Find documents in a collection
@@ -137,6 +137,26 @@ for cursor.Next() {
 
 ```go
 err := db.Collection("users").Insert(User{
+    ID:    primitive.NewObjectID(),
+    Name:  "test",
+    Email: "example@example.org",
+})
+```
+
+### `ReplaceFirstByID` - Replace a document
+
+```go
+err := db.Collection("users").ReplaceFirst(bson.M{"email": "foo@example.org"}, User{
+    ID:    primitive.NewObjectID(),
+    Name:  "test",
+    Email: "example@example.org",
+})
+```
+
+### `ReplaceFirstByID` - Replace a document by ID
+
+```go
+err := db.Collection("users").ReplaceFirstByID(primitive.NewObjectID(), User{
     ID:    primitive.NewObjectID(),
     Name:  "test",
     Email: "example@example.org",
