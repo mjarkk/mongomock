@@ -6,7 +6,7 @@ import (
 	. "github.com/stretchr/testify/assert"
 )
 
-func TestUpdate(t *testing.T) {
+func TestReplace(t *testing.T) {
 	usersCollection := NewDB().Collection("users")
 
 	Equal(t, "users", usersCollection.name)

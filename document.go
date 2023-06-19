@@ -4,7 +4,7 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/mjarkk/mongomock/match"
+	"github.com/mjarkk/mongomock/reflectutils"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -15,7 +15,7 @@ type documentT struct {
 }
 
 func tryNewDocument(value any) (documentT, error) {
-	parsedValue, isNil := match.MightUnwrapPointersAndInterfaces(reflect.ValueOf(value))
+	parsedValue, isNil := reflectutils.MightUnwrapPointersAndInterfaces(reflect.ValueOf(value))
 	if isNil {
 		return documentT{}, errors.New("value is nil")
 	}

@@ -1,14 +1,13 @@
-package match
+package reflectutils
 
 import (
 	"reflect"
-	"strings"
 )
 
-// sliceLikeToSlice converts a slice-like value to a slice of any.
+// SliceLikeToSlice converts a slice-like value to a slice of any.
 // A slice-like value is either a slice or an array or a pointer to a slice or an array.
 // Nil slice-like values are returned as empty slices.
-func sliceLikeToSlice(sliceLike any) (slice []any, isSliceLike bool) {
+func SliceLikeToSlice(sliceLike any) (slice []any, isSliceLike bool) {
 	sliceReflection, isNil := MightUnwrapPointersAndInterfaces(reflect.ValueOf(sliceLike))
 	kind := sliceReflection.Kind()
 	if kind != reflect.Slice && kind != reflect.Array {
@@ -44,38 +43,4 @@ outer:
 	}
 
 	return v, isNil
-}
-
-// lookupMapKey looks up a key in a map.
-// Note that the key can also be a nested key like "foo.bar.baz".
-func lookupMapKey(scope reflect.Value, key string) *reflect.Value {
-	nestedFilterkeyParts := strings.Split(key, ".")
-	for _, part := range nestedFilterkeyParts {
-		unwrappedScope, isNil := MightUnwrapPointersAndInterfaces(scope)
-		if isNil {
-			return nil
-		}
-
-		switch unwrappedScope.Kind() {
-		case reflect.Struct:
-			unwrappedScope = reflect.ValueOf(mustConvertToBson(unwrappedScope.Interface()))
-			if unwrappedScope.IsNil() {
-				return nil
-			}
-		case reflect.Map:
-			if unwrappedScope.IsNil() {
-				return nil
-			}
-			// continue
-		default:
-			return nil
-		}
-
-		scope = unwrappedScope.MapIndex(reflect.ValueOf(part))
-		if !scope.IsValid() {
-			return nil
-		}
-	}
-	scope, _ = MightUnwrapPointersAndInterfaces(scope)
-	return &scope
 }

@@ -16,7 +16,7 @@ func TestFindOneWithoutFilters(t *testing.T) {
 	NoError(t, err)
 
 	foundResult := MockUser{}
-	err = usersCollection.FindOne(&foundResult, bson.M{})
+	err = usersCollection.FindFirst(&foundResult, bson.M{})
 	NoError(t, err)
 	Equal(t, mockData.ID, foundResult.ID)
 }

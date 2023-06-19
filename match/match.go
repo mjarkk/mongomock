@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/mjarkk/mongomock/reflectutils"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -45,7 +46,7 @@ func internalMatch(document any, filter bson.M) bool {
 // This in the bases is just foo == bar
 // But mongodb supports lots of operators and this function also resolves them
 func valueMatchesFilter(value any, filter any) bool {
-	valueSlice, valueIsSliceLike := sliceLikeToSlice(value)
+	valueSlice, valueIsSliceLike := reflectutils.SliceLikeToSlice(value)
 	if valueIsSliceLike {
 		matched := sliceLikeValueMatchesSliceLikeFilter(valueSlice, filter)
 		if matched {
@@ -77,12 +78,12 @@ func valueMatchesFilter(value any, filter any) bool {
 		float32, float64:
 		return numberValueMatchesFilter(value, filter, eqComparator)
 	default:
-		_, filterIsSliceLike := sliceLikeToSlice(filter)
+		_, filterIsSliceLike := reflectutils.SliceLikeToSlice(filter)
 		if filterIsSliceLike {
 			return false
 		}
 
-		filterReflection, isNil := MightUnwrapPointersAndInterfaces(reflect.ValueOf(filter))
+		filterReflection, isNil := reflectutils.MightUnwrapPointersAndInterfaces(reflect.ValueOf(filter))
 		switch filterReflection.Kind() {
 		case reflect.Struct, reflect.Map:
 			filter = mustConvertToBson(filter)
@@ -99,7 +100,7 @@ func valueMatchesFilter(value any, filter any) bool {
 }
 
 func sliceLikeValueMatchesSliceLikeFilter(valueSlice []any, filter any) bool {
-	filterSlice, filterIsSliceLike := sliceLikeToSlice(filter)
+	filterSlice, filterIsSliceLike := reflectutils.SliceLikeToSlice(filter)
 	if !filterIsSliceLike {
 		// Trying to match
 		// Document: { age: [1, 2, 3] }
@@ -155,7 +156,7 @@ func valueMatchesOperator(value any, operator string, operatorFilter any) bool {
 	case "lte":
 		return numberValueMatchesFilter(value, operatorFilter, lteComparator)
 	case "and":
-		typedOperatorFilter, isSliceLike := sliceLikeToSlice(operatorFilter)
+		typedOperatorFilter, isSliceLike := reflectutils.SliceLikeToSlice(operatorFilter)
 		if !isSliceLike {
 			panic("$and operator filter should be a slice")
 		}
@@ -168,7 +169,7 @@ func valueMatchesOperator(value any, operator string, operatorFilter any) bool {
 
 		return true
 	case "nor":
-		typedOperatorFilter, isSliceLike := sliceLikeToSlice(operatorFilter)
+		typedOperatorFilter, isSliceLike := reflectutils.SliceLikeToSlice(operatorFilter)
 		if !isSliceLike {
 			panic("$and operator filter should be a slice")
 		}
@@ -181,7 +182,7 @@ func valueMatchesOperator(value any, operator string, operatorFilter any) bool {
 
 		return true
 	case "or":
-		typedOperatorFilter, isSliceLike := sliceLikeToSlice(operatorFilter)
+		typedOperatorFilter, isSliceLike := reflectutils.SliceLikeToSlice(operatorFilter)
 		if !isSliceLike {
 			panic("$and operator filter should be a slice")
 		}
@@ -194,7 +195,7 @@ func valueMatchesOperator(value any, operator string, operatorFilter any) bool {
 
 		return false
 	case "in":
-		typedOperatorFilter, isSliceLike := sliceLikeToSlice(operatorFilter)
+		typedOperatorFilter, isSliceLike := reflectutils.SliceLikeToSlice(operatorFilter)
 		if !isSliceLike {
 			panic("$in operator filter should be a slice")
 		}
@@ -207,7 +208,7 @@ func valueMatchesOperator(value any, operator string, operatorFilter any) bool {
 
 		return true
 	case "nin":
-		typedOperatorFilter, isSliceLike := sliceLikeToSlice(operatorFilter)
+		typedOperatorFilter, isSliceLike := reflectutils.SliceLikeToSlice(operatorFilter)
 		if !isSliceLike {
 			panic("$in operator filter should be a slice")
 		}
@@ -276,12 +277,12 @@ func valueMatchesOperator(value any, operator string, operatorFilter any) bool {
 
 		return false
 	case "all":
-		valueSlice, isSliceLike := sliceLikeToSlice(value)
+		valueSlice, isSliceLike := reflectutils.SliceLikeToSlice(value)
 		if !isSliceLike {
 			return false
 		}
 
-		filterEntries, isSliceLike := sliceLikeToSlice(operatorFilter)
+		filterEntries, isSliceLike := reflectutils.SliceLikeToSlice(operatorFilter)
 		if !isSliceLike {
 			panic("$all operator filter should be a slice")
 		}
@@ -313,7 +314,7 @@ func valueMatchesOperator(value any, operator string, operatorFilter any) bool {
 			panic("$size operator filter should be a number")
 		}
 
-		valueSlice, isSliceLike := sliceLikeToSlice(value)
+		valueSlice, isSliceLike := reflectutils.SliceLikeToSlice(value)
 		if !isSliceLike {
 			return false
 		}
