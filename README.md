@@ -61,10 +61,34 @@ func main() {
 nr, err := db.Collection("users").Count(bson.M{})
 ```
 
+### `Delete` - Delete documents in a collection
+
+```go
+err := db.Collection("users").Delete(bson.M{})
+```
+
+### `DeleteFirst` - Delete a document in a collection
+
+```go
+err := db.Collection("users").DeleteFirst(bson.M{})
+```
+
+### `DeleteFirst` - Delete a document in a collection
+
+```go
+err := db.Collection("users").DeleteFirst(bson.M{})
+```
+
 ### `DeleteByID` - Delete a document by ID
 
 ```go
 err := db.Collection("users").DeleteByID(primitive.NewObjectID())
+```
+
+### `DeleteByIDs` - Delete documents by their IDs
+
+```go
+err := db.Collection("users").DeleteByID(primitive.NewObjectID(), primitive.NewObjectID(), primitive.NewObjectID())
 ```
 
 ### `Dump` - Dump the database to std{out,err}
