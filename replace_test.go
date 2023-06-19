@@ -27,7 +27,7 @@ func TestUpdate(t *testing.T) {
 	newMockData.Realname = &realname
 	newMockData.ID = mockData.ID
 
-	err = usersCollection.ReplaceOneById(mockData.ID, newMockData)
+	err = usersCollection.ReplaceFirstByID(mockData.ID, newMockData)
 	NoError(t, err)
 
 	// Check if the data in the database is actually replaced
@@ -35,7 +35,7 @@ func TestUpdate(t *testing.T) {
 	Equal(t, 1, len(collectionData))
 
 	firstItem := MockUser{}
-	err = usersCollection.FindOne(&firstItem, nil)
+	err = usersCollection.FindFirst(&firstItem, nil)
 	NoError(t, err)
 	NotNil(t, firstItem.Realname)
 	Equal(t, realname, *firstItem.Realname)
