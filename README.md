@@ -103,7 +103,7 @@ err := db.Dump(panicResults)
 err := db.Collection("users").Dump(panicResults)
 ```
 
-### `FindOne` - Find a single doucment in a collection
+### `FindFirst` - Find a single doucment in a collection
 
 ```go
 user := User{}

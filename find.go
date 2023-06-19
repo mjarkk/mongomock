@@ -9,11 +9,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// FindOne finds one document in the collection of placeInto
+// FindFirst finds the first document in the collection matching the filter and places it into placeInto
 // The result can be filtered using filters
 // The filters should work equal to MongoDB filters (https://docs.mongodb.com/manual/tutorial/query-documents/)
 // tough this might miss features compared to mongoDB's filters
-func (c *Collection) FindOne(placeInto any, filter bson.M) error {
+func (c *Collection) FindFirst(placeInto any, filter bson.M) error {
 	placeIntoReflection := reflect.ValueOf(placeInto)
 	if placeIntoReflection.Kind() != reflect.Ptr {
 		return errors.New("placeInto should be a pointer")
