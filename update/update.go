@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func ApplyUpdate(document bson.M, update bson.M) (bson.M, error) {
+func ApplyUpdate(document, update bson.M) (bson.M, error) {
 	if update == nil {
 		return document, nil
 	}
@@ -21,7 +21,7 @@ func ApplyUpdate(document bson.M, update bson.M) (bson.M, error) {
 		return nil, err
 	}
 
-	return document, errors.New("not implemented")
+	return document, nil
 }
 
 func applySet(document bson.M, value any) (bson.M, error) {
@@ -66,7 +66,7 @@ func bsonSetNestedFieldBase(document bson.M, baseKeyAndSubKey []string, value re
 func bsonSetField(document bson.M, key string, value reflect.Value) (bson.M, error) {
 	keyParts := strings.SplitN(key, ".", 2)
 	if len(keyParts) == 1 {
-		document[key] = value
+		document[key] = value.Interface()
 		return document, nil
 	}
 
@@ -84,9 +84,14 @@ func bsonSetField(document bson.M, key string, value reflect.Value) (bson.M, err
 		if !ok {
 			return nil, fmt.Errorf("trying to access a nested key on a non-bson.M map: %s", keyParts[0])
 		}
-		return bsonSetField(typedField, keyParts[1], value)
+		newFieldValue, err := bsonSetField(typedField, keyParts[1], value)
+		if err != nil {
+			return nil, err
+		}
+		document[keyParts[0]] = newFieldValue
+		return document, nil
 	case reflect.Slice, reflect.Array:
-		value, err := bsonSetSliceLike(fieldReflection, key, value)
+		value, err := bsonSetSliceLike(fieldReflection, keyParts[1], value)
 		if err != nil {
 			return nil, err
 		}
@@ -120,13 +125,6 @@ func bsonSetSliceLike(potentialDocumentSlice reflect.Value, key string, value re
 		if arrayIndex < 0 {
 			return nil, fmt.Errorf("trying to access a slice like element using a negative key: %s", key)
 		}
-		if arrayIndex >= potentialDocumentSlice.Len() {
-			// The array is too small, we need to resize it
-			if potentialDocumentSlice.Kind() == reflect.Array {
-				return nil, fmt.Errorf("trying to access a slice like element using an out of range key (This should be possible but the document contains a staticly sized array): %s", keyParts[0])
-			}
-			potentialDocumentSlice.SetLen(arrayIndex + 1)
-		}
 
 		valueToSet := value
 		if isNestedKey {
@@ -135,11 +133,48 @@ func bsonSetSliceLike(potentialDocumentSlice reflect.Value, key string, value re
 				return nil, err
 			}
 			valueToSet = reflect.ValueOf(nestedValue)
+		} else if valueToSet.Kind() == reflect.Interface {
+			valueToSet = valueToSet.Elem()
 		}
-		potentialDocumentSlice.Index(arrayIndex).Set(valueToSet)
+
+		switch potentialDocumentSlice.Type().Elem().Kind() {
+		case reflect.Interface:
+			// The slice is of type interface{}, we can just set the value
+			// Just continue
+		default:
+			// Check if the value we try to assign is of the same type as the slice elements
+			// If not we convert the slice to a slice of interface{} and assign the value
+			if valueToSet.Type() != potentialDocumentSlice.Type().Elem() {
+				potentialDocumentSlice = convertSliceLikeToInterfaceSlice(potentialDocumentSlice)
+			}
+		}
+		setArrayIndex(&potentialDocumentSlice, arrayIndex, valueToSet)
 
 		return potentialDocumentSlice.Interface(), nil
 	default:
 		return nil, fmt.Errorf("trying to access a slice like element on a non-slice like field: %s", key)
 	}
+}
+
+func convertSliceLikeToInterfaceSlice(sliceLike reflect.Value) reflect.Value {
+	interfaceType := reflect.TypeOf((*interface{})(nil)).Elem()
+	response := reflect.MakeSlice(reflect.SliceOf(interfaceType), sliceLike.Len(), sliceLike.Len())
+	for idx := 0; idx < sliceLike.Len(); idx++ {
+		response.Index(idx).Set(sliceLike.Index(idx))
+	}
+	return response
+}
+
+func setArrayIndex(sliceLike *reflect.Value, index int, value reflect.Value) error {
+	if index >= sliceLike.Len() {
+		// The array is too small, we need to resize it
+		if sliceLike.Kind() == reflect.Array {
+			return fmt.Errorf("trying to access a slice like element using an out of range key (This should be possible but the document contains a staticly sized array): %d", index)
+		}
+		sliceLike.SetLen(index + 1)
+	}
+
+	sliceLike.Index(index).Set(value)
+
+	return nil
 }
