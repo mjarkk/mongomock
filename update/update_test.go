@@ -110,3 +110,5 @@ func TestSetUpdate(t *testing.T) {
 		bson.M{"foo": []any{1, 2, 3, nil, nil, nil, nil, nil, nil, nil, bson.M{"bar": 20}}},
 	)
 }
+
+func TestUnset(t *testing.T) {}
