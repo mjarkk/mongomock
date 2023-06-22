@@ -171,7 +171,8 @@ func setArrayIndex(sliceLike *reflect.Value, index int, value reflect.Value) err
 		if sliceLike.Kind() == reflect.Array {
 			return fmt.Errorf("trying to access a slice like element using an out of range key (This should be possible but the document contains a staticly sized array): %d", index)
 		}
-		sliceLike.SetLen(index + 1)
+		toAppend := reflect.MakeSlice(sliceLike.Type(), index+1-sliceLike.Len(), index+1-sliceLike.Len())
+		*sliceLike = reflect.AppendSlice(*sliceLike, toAppend)
 	}
 
 	sliceLike.Index(index).Set(value)
