@@ -15,6 +15,8 @@ func applyUnset(document bson.M, update any) (bson.M, error) {
 		return document, nil
 	}
 
+	// FIXME Support update as string or map of keys
+
 	updateReflection := reflect.ValueOf(update)
 	updateReflection, isNil := reflectutils.MightUnwrapPointersAndInterfaces(updateReflection)
 	if isNil {
