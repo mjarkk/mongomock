@@ -111,4 +111,60 @@ func TestSetUpdate(t *testing.T) {
 	)
 }
 
-func TestUnset(t *testing.T) {}
+func TestUnset(t *testing.T) {
+	// Unset a property using object
+	assertApplyUpdate(
+		t,
+		bson.M{"foo": 10, "bar": 20},
+		bson.M{"$unset": bson.M{"foo": ""}},
+		bson.M{"bar": 20},
+	)
+
+	// Unset a property using slice
+	assertApplyUpdate(
+		t,
+		bson.M{"foo": 10, "bar": 20},
+		bson.M{"$unset": []string{"foo"}},
+		bson.M{"bar": 20},
+	)
+
+	// Unset a property using a string
+	assertApplyUpdate(
+		t,
+		bson.M{"foo": 10, "bar": 20},
+		bson.M{"$unset": "foo"},
+		bson.M{"bar": 20},
+	)
+
+	// Unset multiple properties
+	assertApplyUpdate(
+		t,
+		bson.M{"foo": 10, "bar": 20},
+		bson.M{"$unset": []string{"foo", "bar"}},
+		bson.M{},
+	)
+
+	// Unset a nested property
+	assertApplyUpdate(
+		t,
+		bson.M{"foo": bson.M{"baz": true}, "bar": 20},
+		bson.M{"$unset": "foo.baz"},
+		bson.M{"foo": bson.M{}, "bar": 20},
+	)
+
+	// Unset a slice property
+	assertApplyUpdate(
+		t,
+		bson.M{"foo": []int{6, 4, 2}},
+		bson.M{"$unset": "foo.1"},
+		bson.M{"foo": []any{6, nil, 2}},
+	)
+
+	// Unset a slice property using a string
+	assertApplyUpdate(
+		t,
+		bson.M{"foo": []bson.M{{"foo": "bar"}, {"bar": "baz"}, {"foobar": "barbaz"}}},
+		bson.M{"$unset": "foo.1.bar"},
+		bson.M{"foo": []bson.M{{"foo": "bar"}, {}, {"foobar": "barbaz"}}},
+	)
+}

@@ -9,14 +9,20 @@ func ApplyUpdate(document, update bson.M) (bson.M, error) {
 		return document, nil
 	}
 
-	document, err := applySet(document, update["$set"])
-	if err != nil {
-		return nil, err
+	var err error
+
+	if value, ok := update["$set"]; ok {
+		document, err = applySet(document, value)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	document, err = applyUnset(document, update["$unset"])
-	if err != nil {
-		return nil, err
+	if value, ok := update["$unset"]; ok {
+		document, err = applyUnset(document, value)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return document, nil

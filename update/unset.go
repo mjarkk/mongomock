@@ -24,28 +24,54 @@ func applyUnset(document bson.M, update any) (bson.M, error) {
 	}
 
 	switch updateReflection.Kind() {
+	case reflect.String:
+		return unsetKeys(document, []string{updateReflection.String()})
+	case reflect.Map:
+		if updateReflection.IsNil() {
+			return document, nil
+		}
+
+		mapRange := updateReflection.MapRange()
+		keys := []string{}
+		for mapRange.Next() {
+			key, err := reflectutils.NormalizeKey(mapRange.Key())
+			if err != nil {
+				return nil, err
+			}
+			keys = append(keys, key)
+		}
+
+		return unsetKeys(document, keys)
 	case reflect.Slice:
 		if updateReflection.IsNil() {
 			return document, nil
 		}
 		fallthrough
 	case reflect.Array:
+		keys := []string{}
 		for idx := 0; idx < updateReflection.Len(); idx++ {
-			keyToUnsetReflection := updateReflection.Index(idx)
-			keyToUnset, err := reflectutils.NormalizeKey(keyToUnsetReflection)
+			keyReflection := updateReflection.Index(idx)
+			key, err := reflectutils.NormalizeKey(keyReflection)
 			if err != nil {
 				return nil, fmt.Errorf("%s, index: %d", err.Error(), idx)
 			}
-
-			document, err = unsetKey(document, keyToUnset)
-			if err != nil {
-				return nil, fmt.Errorf("%s, key: %s", err.Error(), keyToUnset)
-			}
+			keys = append(keys, key)
 		}
+
+		return unsetKeys(document, keys)
 	default:
 		return nil, fmt.Errorf("$unset expected a slice like, got %s", updateReflection.Type())
 	}
+}
 
+func unsetKeys(document bson.M, keys []string) (bson.M, error) {
+	var err error
+	for _, key := range keys {
+		document, err = unsetKey(document, key)
+		if err != nil {
+			return nil, fmt.Errorf("%s, key: %s", err.Error(), key)
+		}
+	}
 	return document, nil
 }
 
@@ -96,6 +122,7 @@ func unsetKey(document bson.M, key string) (bson.M, error) {
 		fallthrough
 	case reflect.Array:
 		err := unsetSliceLike(&entryReflection, keyParts[1])
+		document[keyParts[0]] = entryReflection.Interface()
 		return document, err
 	default:
 		// This is a value without any subfields, so we can't delete anything
@@ -115,21 +142,43 @@ func unsetSliceLike(sliceLike *reflect.Value, key string) error {
 		return err
 	}
 
-	if sliceLike.Len() >= index {
+	if index >= sliceLike.Len() {
 		return nil
 	}
 
-	entry := sliceLike.Index(index)
-
 	if len(keyParts) == 1 {
 		// Path 2
-		zeroValue := reflect.Zero(sliceLike.Type().Elem())
-		entry.Set(zeroValue)
+		sliceLikeElementType := sliceLike.Type().Elem()
+		switch sliceLikeElementType.Kind() {
+		case reflect.Ptr | reflect.Interface | reflect.Map | reflect.Slice:
+			// null value is actually null (nil)
+		default:
+			// null value is actually the zero value
+			*sliceLike = convertSliceLikeToInterfaceSlice(*sliceLike)
+		}
+
+		sliceLike.Index(index).SetZero()
 		return nil
 	}
 
 	// Path 1
-	// FIXME implement this path
+	entry := sliceLike.Index(index)
+	unwrappedEntry, isNil := reflectutils.MightUnwrapPointersAndInterfaces(entry)
+	if isNil || entry.Kind() != reflect.Map || entry.IsNil() {
+		return fmt.Errorf("expected a map as this is a nested key %s, got %v", key, entry.Interface())
+	}
+
+	entryAsMap, err := reflectutils.ConvertMapToBsonM(unwrappedEntry)
+	if err != nil {
+		return err
+	}
+
+	entryAsMap, err = unsetKey(entryAsMap, keyParts[1])
+	if err != nil {
+		return err
+	}
+
+	entry.Set(reflect.ValueOf(entryAsMap))
 
 	return nil
 }
